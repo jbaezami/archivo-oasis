@@ -1,10 +1,14 @@
+import { Canvas } from '@react-three/fiber'
+import Scene from './Scene'
 import styles from './Home.module.css'
 
 function Home() {
   return (
-    <main className={styles.container}>
-      <h1>Bienvenido al almanaque</h1>
-    </main>
+    <div className={styles.container}>
+      <Canvas camera={{ position: [0, 2, 6], fov: 50 }}>
+        <Scene />
+      </Canvas>
+    </div>
   )
 }
 
