@@ -5,3 +5,10 @@ services:
     restart: unless-stopped
     ports:
       - "8081:80"
+    networks:
+      - default
+      - red-cloudflare
+
+networks:
+  red-cloudflare:
+    external: true
