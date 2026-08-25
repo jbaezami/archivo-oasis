@@ -36,5 +36,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: Trigger Portainer redeploy
-        if: ${{ secrets.PORTAINER_WEBHOOK_URL != '' }}
-        run: curl -fsS -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
+        env:
+          PORTAINER_WEBHOOK_URL: ${{ secrets.PORTAINER_WEBHOOK_URL }}
+        if: env.PORTAINER_WEBHOOK_URL != ''
+        run: curl -fsS -X POST "$PORTAINER_WEBHOOK_URL"
