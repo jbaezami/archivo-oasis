@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Html, useCursor } from '@react-three/drei'
 
@@ -6,13 +6,22 @@ function Door() {
   const [hovered, setHovered] = useState(false)
   const navigate = useNavigate()
   useCursor(hovered)
+  const downPos = useRef<[number, number] | null>(null)
 
   return (
     <group
       position={[0, 1.25, 0]}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
-      onClick={() => navigate('/archivo')}
+      onPointerDown={(e) => {
+        downPos.current = [e.clientX, e.clientY]
+      }}
+      onPointerUp={(e) => {
+        const down = downPos.current
+        if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 5) {
+          navigate('/archivo')
+        }
+      }}
     >
       <mesh position={[-0.9, 0, 0]}>
         <boxGeometry args={[0.2, 2.5, 0.2]} />
@@ -33,7 +42,7 @@ function Door() {
       </mesh>
 
       {hovered && (
-        <Html position={[0, -1.4, 0]} center>
+        <Html position={[0, -1.4, 0]} center style={{ pointerEvents: 'none' }}>
           <div
             style={{
               color: '#0ff0fc',

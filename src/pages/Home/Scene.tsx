@@ -22,6 +22,7 @@ function Scene() {
         color="#0ff0fc"
         anchorX="center"
         anchorY="middle"
+        font="/fonts/orbitron-700.woff"
       >
         ARCHIVO OASIS
       </Text>
