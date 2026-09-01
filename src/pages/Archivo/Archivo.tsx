@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/useAuth'
+import LogoutButton from './LogoutButton'
 import styles from './Archivo.module.css'
 
 function Archivo() {
-  const { authenticated } = useAuth()
+  const { authenticated, setAuthenticated } = useAuth()
   const navigate = useNavigate()
 
   if (!authenticated) {
@@ -21,6 +22,12 @@ function Archivo() {
 
   return (
     <main className={styles.container}>
+      <LogoutButton
+        onLogout={() => {
+          setAuthenticated(false)
+          navigate('/')
+        }}
+      />
       <h1>Archivo — próximamente</h1>
     </main>
   )
