@@ -7,3 +7,25 @@
   background: #03010a;
   color: #0ff0fc;
 }
+
+.button {
+  margin-top: 1.25rem;
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #0ff0fc, #7b2ff7);
+  color: #03010a;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+}
+
+.button:hover {
+  filter: brightness(1.1);
+}
+
+.button:active {
+  transform: scale(0.98);
+}

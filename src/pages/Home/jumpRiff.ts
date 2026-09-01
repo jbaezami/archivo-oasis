@@ -45,3 +45,6 @@ for (const chord of RIFF) {
 
 export const JUMP_KEYS: number[][] = uniqueChords.map(chordFrequencies)
 export const JUMP_SEQUENCE: number[] = sequence
+export const JUMP_KEY_LABELS: string[] = uniqueChords.map((chord) =>
+  chord.toUpperCase().split('').join('-'),
+)

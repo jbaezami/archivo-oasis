@@ -2,12 +2,14 @@ import { useRef, useState } from 'react'
 import { Stars, OrbitControls, Text, Html } from '@react-three/drei'
 import Door from './Door'
 import JumpKeys from './JumpKeys'
+import { useJumpKeys } from './useJumpKeys'
 
 interface SceneProps {
-  onRequestLogin: () => void
+  authenticated: boolean
+  onRequestAccess: () => void
 }
 
-function Scene({ onRequestLogin }: SceneProps) {
+function Scene({ authenticated, onRequestAccess }: SceneProps) {
   const [unlocked, setUnlocked] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const messageTimeoutRef = useRef<number | null>(null)
@@ -23,11 +25,16 @@ function Scene({ onRequestLogin }: SceneProps) {
     showMessage('Puerta desbloqueada')
   }
 
+  const { flash, handleKeyPress } = useJumpKeys({
+    trackProgress: !authenticated && !unlocked,
+    onComplete: handleUnlock,
+  })
+
   const handleDoorClick = () => {
-    if (!unlocked) {
-      showMessage('Salta amigo y entra')
+    if (authenticated || unlocked) {
+      onRequestAccess()
     } else {
-      onRequestLogin()
+      showMessage('Salta amigo y entra')
     }
   }
 
@@ -42,11 +49,6 @@ function Scene({ onRequestLogin }: SceneProps) {
 
       <Stars radius={50} depth={50} count={3000} factor={4} saturation={0} fade speed={0.5} />
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#050311" roughness={0.9} />
-      </mesh>
-
       <Text
         position={[0, 3.4, 0]}
         fontSize={0.4}
@@ -59,7 +61,7 @@ function Scene({ onRequestLogin }: SceneProps) {
       </Text>
 
       <Door onDoorClick={handleDoorClick} />
-      {!unlocked && <JumpKeys onUnlock={handleUnlock} />}
+      {!authenticated && !unlocked && <JumpKeys flash={flash} onKeyPress={handleKeyPress} />}
 
       {message && (
         <Html position={[0, 2.55, 0]} center style={{ pointerEvents: 'none' }}>
