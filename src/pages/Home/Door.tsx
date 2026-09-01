@@ -1,16 +1,50 @@
-import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Html, useCursor } from '@react-three/drei'
+import { useRef, useState, useMemo } from 'react'
+import { Html, useCursor, useGLTF } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
 
-function Door() {
+const DOOR_MODEL_URL = '/models/door.glb'
+
+interface DoorProps {
+  onDoorClick: () => void
+}
+
+function Door({ onDoorClick }: DoorProps) {
   const [hovered, setHovered] = useState(false)
-  const navigate = useNavigate()
   useCursor(hovered)
   const downPos = useRef<[number, number] | null>(null)
 
+  const { scene } = useGLTF(DOOR_MODEL_URL)
+
+  const doorScene = useMemo(() => scene.clone(true), [scene])
+
+  const glowScene = useMemo(() => {
+    const clone = scene.clone(true)
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: '#7bf7ff',
+      transparent: true,
+      opacity: 0,
+      side: THREE.BackSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    })
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        ;(child as THREE.Mesh).material = glowMaterial
+      }
+    })
+    return { object: clone, material: glowMaterial }
+  }, [scene])
+
+  useFrame((_, delta) => {
+    const target = hovered ? 0.5 : 0
+    glowScene.material.opacity = THREE.MathUtils.damp(glowScene.material.opacity, target, 8, delta)
+  })
+
   return (
     <group
-      position={[0, 1.25, 0]}
+      position={[0, 0, 0]}
+      rotation={[0, Math.PI / 2, 0]}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
       onPointerDown={(e) => {
@@ -19,30 +53,18 @@ function Door() {
       onPointerUp={(e) => {
         const down = downPos.current
         if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 5) {
-          navigate('/archivo')
+          onDoorClick()
         }
       }}
     >
-      <mesh position={[-0.9, 0, 0]}>
-        <boxGeometry args={[0.2, 2.5, 0.2]} />
-        <meshStandardMaterial color="#0ff0fc" emissive="#0ff0fc" emissiveIntensity={1.2} />
-      </mesh>
-      <mesh position={[0.9, 0, 0]}>
-        <boxGeometry args={[0.2, 2.5, 0.2]} />
-        <meshStandardMaterial color="#0ff0fc" emissive="#0ff0fc" emissiveIntensity={1.2} />
-      </mesh>
-      <mesh position={[0, 1.25, 0]}>
-        <boxGeometry args={[2, 0.2, 0.2]} />
-        <meshStandardMaterial color="#0ff0fc" emissive="#0ff0fc" emissiveIntensity={1.2} />
-      </mesh>
+      <primitive object={doorScene} />
 
-      <mesh position={[0, 0, -0.05]}>
-        <boxGeometry args={[1.6, 2.4, 0.1]} />
-        <meshStandardMaterial color="#120024" emissive="#7b2ff7" emissiveIntensity={0.4} />
-      </mesh>
+      <group scale={1.035}>
+        <primitive object={glowScene.object} />
+      </group>
 
       {hovered && (
-        <Html position={[0, -1.4, 0]} center style={{ pointerEvents: 'none' }}>
+        <Html position={[0, -0.35, 0]} center style={{ pointerEvents: 'none' }}>
           <div
             style={{
               color: '#0ff0fc',
@@ -60,5 +82,7 @@ function Door() {
     </group>
   )
 }
+
+useGLTF.preload(DOOR_MODEL_URL)
 
 export default Door
