@@ -3,6 +3,7 @@ import type { DB } from './db'
 import type { JellyfinClient } from './jellyfin'
 import { createSessionMiddleware } from './session'
 import { createAuthRouter } from './routes/auth'
+import { createAdminRouter } from './routes/admin'
 
 export interface AppConfig {
   db: DB
@@ -19,6 +20,7 @@ export function createApp(config: AppConfig): Express {
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }))
   app.use('/api', createAuthRouter(config.db, config.jellyfin, config.adminUsername))
+  app.use('/api/admin', createAdminRouter(config.db, config.adminUsername))
 
   return app
 }
