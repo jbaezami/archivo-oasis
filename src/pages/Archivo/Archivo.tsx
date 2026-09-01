@@ -1,13 +1,31 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/useAuth'
 import LogoutButton from './LogoutButton'
+import Dashboard from './Dashboard'
 import styles from './Archivo.module.css'
 
 function Archivo() {
-  const { authenticated, setAuthenticated } = useAuth()
+  const { status, session, logout } = useAuth()
   const navigate = useNavigate()
 
-  if (!authenticated) {
+  if (status === 'loading') {
+    return <main className={styles.container} />
+  }
+
+  if (status === 'offline') {
+    return (
+      <main className={styles.container}>
+        <div>
+          <h1>No se pudo conectar con el servidor</h1>
+          <button className={styles.button} onClick={() => navigate('/')}>
+            Volver
+          </button>
+        </div>
+      </main>
+    )
+  }
+
+  if (status === 'anonymous' || !session) {
     return (
       <main className={styles.container}>
         <div>
@@ -23,12 +41,12 @@ function Archivo() {
   return (
     <main className={styles.container}>
       <LogoutButton
-        onLogout={() => {
-          setAuthenticated(false)
+        onLogout={async () => {
+          await logout()
           navigate('/')
         }}
       />
-      <h1>Archivo — próximamente</h1>
+      <Dashboard session={session} />
     </main>
   )
 }
