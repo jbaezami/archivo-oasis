@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { authenticateWithJellyfin, JellyfinAuthError } from './jellyfinAuth'
+import { login, JellyfinAuthError } from '../../lib/authApi'
 import styles from './LoginModal.module.css'
 
 interface LoginModalProps {
@@ -26,7 +26,7 @@ function LoginModal({ onClose, onSuccess }: LoginModalProps) {
     setError(null)
     setSubmitting(true)
     try {
-      await authenticateWithJellyfin(username, password)
+      await login(username, password)
       onSuccess()
     } catch (err) {
       setError(err instanceof JellyfinAuthError ? err.message : 'Ha ocurrido un error inesperado')

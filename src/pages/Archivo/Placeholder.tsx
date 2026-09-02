@@ -1,11 +1,15 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/useAuth'
-import LogoutButton from './LogoutButton'
-import Dashboard from './Dashboard'
+import type { AppKey } from '../../lib/authApi'
 import styles from './Archivo.module.css'
 
-function Archivo() {
-  const { status, session, logout } = useAuth()
+interface PlaceholderProps {
+  title: string
+  need: AppKey
+}
+
+function Placeholder({ title, need }: PlaceholderProps) {
+  const { status, session } = useAuth()
   const navigate = useNavigate()
 
   if (status === 'loading') {
@@ -25,7 +29,7 @@ function Archivo() {
     )
   }
 
-  if (status === 'anonymous' || !session) {
+  if (!session || !session.permissions.includes(need)) {
     return (
       <main className={styles.container}>
         <div>
@@ -40,15 +44,9 @@ function Archivo() {
 
   return (
     <main className={styles.container}>
-      <LogoutButton
-        onLogout={async () => {
-          await logout()
-          navigate('/')
-        }}
-      />
-      <Dashboard session={session} />
+      <h1>{title} — próximamente</h1>
     </main>
   )
 }
 
-export default Archivo
+export default Placeholder

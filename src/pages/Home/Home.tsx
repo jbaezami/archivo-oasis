@@ -7,20 +7,22 @@ import LoginModal from './LoginModal'
 import styles from './Home.module.css'
 
 function Home() {
-  const { authenticated, setAuthenticated } = useAuth()
+  const { status, refresh } = useAuth()
   const [loginOpen, setLoginOpen] = useState(false)
   const navigate = useNavigate()
 
   const handleRequestAccess = () => {
-    if (authenticated) {
+    if (status === 'loading') return
+    if (status === 'authenticated') {
       navigate('/archivo')
     } else {
       setLoginOpen(true)
     }
   }
 
-  const handleLoginSuccess = () => {
-    setAuthenticated(true)
+  const handleLoginSuccess = async () => {
+    await refresh()
+    setLoginOpen(false)
     navigate('/archivo')
   }
 
@@ -28,7 +30,7 @@ function Home() {
     <div className={styles.container}>
       <Canvas camera={{ position: [0, 2, 6], fov: 50 }}>
         <Suspense fallback={null}>
-          <Scene authenticated={authenticated} onRequestAccess={handleRequestAccess} />
+          <Scene authenticated={status === 'authenticated'} onRequestAccess={handleRequestAccess} />
         </Suspense>
       </Canvas>
 

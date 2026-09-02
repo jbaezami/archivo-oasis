@@ -1,0 +1,47 @@
+.container {
+  min-height: 100vh;
+  background: #03010a;
+  color: #0ff0fc;
+  padding: 3rem 2rem;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.error {
+  text-align: center;
+  color: #ff6b81;
+  margin-bottom: 1rem;
+}
+
+.loading {
+  text-align: center;
+  color: #8b8fb3;
+}
+
+.table {
+  width: min(700px, 100%);
+  margin: 0 auto;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.6rem 0.9rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(15, 240, 252, 0.2);
+}
+
+.table th:first-child,
+.table td:first-child {
+  text-align: left;
+}
+
+.table input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: #0ff0fc;
+  cursor: pointer;
+}

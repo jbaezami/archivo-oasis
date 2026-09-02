@@ -1,30 +1,46 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { fetchSession, logout as logoutRequest, type AuthSession } from './authApi'
 
-const STORAGE_KEY = 'archivo-oasis:authenticated'
+export type AuthStatus = 'loading' | 'authenticated' | 'anonymous' | 'offline'
 
-function readStoredAuth(): boolean {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === 'true'
-  } catch {
-    return false
-  }
+export interface AuthState {
+  status: AuthStatus
+  session: AuthSession | null
+  refresh: () => Promise<void>
+  logout: () => Promise<void>
 }
 
-export function useAuth() {
-  const [authenticated, setAuthenticatedState] = useState<boolean>(readStoredAuth)
+export function useAuth(): AuthState {
+  const [status, setStatus] = useState<AuthStatus>('loading')
+  const [session, setSession] = useState<AuthSession | null>(null)
 
-  const setAuthenticated = useCallback((value: boolean) => {
-    setAuthenticatedState(value)
+  const refresh = useCallback(async () => {
     try {
-      if (value) {
-        localStorage.setItem(STORAGE_KEY, 'true')
+      const result = await fetchSession()
+      if (result) {
+        setSession(result)
+        setStatus('authenticated')
       } else {
-        localStorage.removeItem(STORAGE_KEY)
+        setSession(null)
+        setStatus('anonymous')
       }
     } catch {
-      // localStorage unavailable (private browsing, etc.) — state still holds for this session.
+      // fetchSession only rejects on a network-level failure (backend unreachable) —
+      // a resolved 401 already becomes `null` above, so this is genuinely "can't reach it".
+      setSession(null)
+      setStatus('offline')
     }
   }, [])
 
-  return { authenticated, setAuthenticated }
+  useEffect(() => {
+    refresh()
+  }, [refresh])
+
+  const logout = useCallback(async () => {
+    await logoutRequest()
+    setSession(null)
+    setStatus('anonymous')
+  }, [])
+
+  return { status, session, refresh, logout }
 }
