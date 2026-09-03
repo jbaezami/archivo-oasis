@@ -13,6 +13,7 @@ function startTestServer() {
   const app = createApp({
     db: createDb(':memory:'),
     jellyfin: acceptingJellyfin,
+    jellyfinAdmin: null,
     adminUsername: 'admin-user',
     sessionSecret: 'test-secret',
   })
@@ -145,6 +146,115 @@ test('POST /api/admin/permissions returns 404 for an unknown username', async ()
       body: JSON.stringify({ username: 'ghost', appKey: 'cantina', granted: true }),
     })
     assert.equal(response.status, 404)
+  } finally {
+    server.close()
+  }
+})
+
+test('POST /api/admin/invites crea una invitación para el admin', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+    const response = await fetch(`${baseUrl}/api/admin/invites`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+      body: JSON.stringify({ label: 'para Marta' }),
+    })
+    assert.equal(response.status, 201)
+    const { invite } = await response.json()
+    assert.equal(typeof invite.token, 'string')
+    assert.equal(invite.label, 'para Marta')
+    assert.equal(invite.createdBy, 'admin-user')
+    assert.equal(invite.status, 'valid')
+    assert.ok(new Date(invite.expiresAt).getTime() > Date.now())
+  } finally {
+    server.close()
+  }
+})
+
+test('POST /api/admin/invites sin label funciona', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+    const response = await fetch(`${baseUrl}/api/admin/invites`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+      body: JSON.stringify({}),
+    })
+    assert.equal(response.status, 201)
+    const { invite } = await response.json()
+    assert.equal(invite.label, null)
+  } finally {
+    server.close()
+  }
+})
+
+test('los endpoints de invitaciones rechazan a quien no es admin', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    const noSession = await fetch(`${baseUrl}/api/admin/invites`)
+    assert.equal(noSession.status, 401)
+    const userCookie = await loginAs(baseUrl, 'alice')
+    const asUser = await fetch(`${baseUrl}/api/admin/invites`, { headers: { Cookie: userCookie } })
+    assert.equal(asUser.status, 403)
+  } finally {
+    server.close()
+  }
+})
+
+test('GET /api/admin/invites lista las invitaciones con su estado', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+    await fetch(`${baseUrl}/api/admin/invites`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+      body: JSON.stringify({ label: 'una' }),
+    })
+    const response = await fetch(`${baseUrl}/api/admin/invites`, { headers: { Cookie: adminCookie } })
+    assert.equal(response.status, 200)
+    const { invites } = await response.json()
+    assert.equal(invites.length, 1)
+    assert.equal(invites[0].status, 'valid')
+  } finally {
+    server.close()
+  }
+})
+
+test('DELETE /api/admin/invites/:token revoca una invitación pendiente', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+    const created = await fetch(`${baseUrl}/api/admin/invites`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+      body: JSON.stringify({}),
+    })
+    const { invite } = await created.json()
+
+    const del = await fetch(`${baseUrl}/api/admin/invites/${invite.token}`, {
+      method: 'DELETE',
+      headers: { Cookie: adminCookie },
+    })
+    assert.equal(del.status, 204)
+
+    const list = await fetch(`${baseUrl}/api/admin/invites`, { headers: { Cookie: adminCookie } })
+    const { invites } = await list.json()
+    assert.equal(invites[0].status, 'revoked')
+  } finally {
+    server.close()
+  }
+})
+
+test('DELETE /api/admin/invites/:token devuelve 404 si no existe', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+    const del = await fetch(`${baseUrl}/api/admin/invites/no-existe`, {
+      method: 'DELETE',
+      headers: { Cookie: adminCookie },
+    })
+    assert.equal(del.status, 404)
   } finally {
     server.close()
   }

@@ -1,13 +1,16 @@
 import express, { type Express } from 'express'
 import type { DB } from './db'
 import type { JellyfinClient } from './jellyfin'
+import type { JellyfinAdminClient } from './jellyfinAdmin'
 import { createSessionMiddleware } from './session'
 import { createAuthRouter } from './routes/auth'
 import { createAdminRouter } from './routes/admin'
+import { createInvitesRouter } from './routes/invites'
 
 export interface AppConfig {
   db: DB
   jellyfin: JellyfinClient
+  jellyfinAdmin: JellyfinAdminClient | null
   adminUsername: string
   sessionSecret: string
 }
@@ -21,6 +24,7 @@ export function createApp(config: AppConfig): Express {
   app.get('/api/health', (_req, res) => res.json({ ok: true }))
   app.use('/api', createAuthRouter(config.db, config.jellyfin, config.adminUsername))
   app.use('/api/admin', createAdminRouter(config.db, config.adminUsername))
+  app.use('/api/invites', createInvitesRouter(config.db, config.jellyfinAdmin))
 
   return app
 }

@@ -19,6 +19,7 @@ services:
       - JELLYFIN_URL=${JELLYFIN_URL}
       - ADMIN_JELLYFIN_USERNAME=${ADMIN_JELLYFIN_USERNAME}
       - SESSION_SECRET=${SESSION_SECRET}
+      - JELLYFIN_API_KEY=${JELLYFIN_API_KEY}
     volumes:
       - archivo-oasis-data:/data
     networks:

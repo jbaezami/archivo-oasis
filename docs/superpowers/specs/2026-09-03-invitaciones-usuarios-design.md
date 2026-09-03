@@ -70,7 +70,7 @@ Fuera:
 | Cuenta de archivo-oasis | Al consumir la invitación se pre-crea la fila del usuario con `jellyfin` y `jellyseerr` concedidos. |
 | Vida de la invitación | Un solo uso + caducidad fija a 7 días + el admin puede revocar. |
 | Layout de Configuración | Menú lateral de categorías → ítems. `Usuarios` es la primera. |
-| Bibliotecas de Jellyfin | Todas, actuales y futuras (`EnableAllFolders: true`, el defecto de Jellyfin). |
+| Bibliotecas de Jellyfin | Todas, actuales y futuras: es el valor por defecto de Jellyfin para usuarios nuevos (`EnableAllFolders`), así que no se hace ninguna llamada a `/Users/{Id}/Policy`. |
 | Pantalla de éxito | Bienvenida con enlaces a teatro, peticiones y `/archivo`. Sin login automático. |
 | URL de la invitación | La construye el frontend con `window.location.origin`; sin config nueva. |
 
@@ -86,7 +86,7 @@ nginx (archivo-oasis)  ───────────────────
                    └── /api/invites/:token      (público)
                           │
                           ├── SQLite: tabla invites, users, permissions
-                          └── jellyfinAdmin  → Jellyfin  (POST /Users/New, /Password, /Policy)
+                          └── jellyfinAdmin  → Jellyfin  (POST /Users/New, /Password)
                                                 con X-Emby-Token: JELLYFIN_API_KEY
 ```
 
@@ -168,8 +168,9 @@ siempre el frontend con `window.location.origin`; el backend no la devuelve.
 4. `jellyfinAdmin.createUser(username, password)`:
    - `POST /Users/New` con `{ Name: username }` → obtiene `{ Id }`.
    - `POST /Users/{Id}/Password` con `{ NewPw: password }`.
-   - `GET /Users/{Id}` → política actual; `POST /Users/{Id}/Policy` con la política y
-     `EnableAllFolders: true`, `EnableAllChannels: true`.
+   - No se llama a `/Users/{Id}/Policy`: el acceso a todas las bibliotecas
+     (`EnableAllFolders`) es el valor por defecto de Jellyfin para los usuarios
+     nuevos, así que no hace falta ninguna llamada de política.
    - Errores:
      - Jellyfin indica nombre duplicado → lanza `JellyfinUserExistsError` → `409`,
        token intacto.

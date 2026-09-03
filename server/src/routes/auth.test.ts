@@ -21,6 +21,7 @@ function startTestServer(jellyfin: JellyfinClient) {
   const app = createApp({
     db: createDb(':memory:'),
     jellyfin,
+    jellyfinAdmin: null,
     adminUsername: 'admin-user',
     sessionSecret: 'test-secret',
   })

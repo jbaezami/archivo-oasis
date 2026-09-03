@@ -1,0 +1,103 @@
+.title {
+  margin: 0 0 1.5rem;
+  color: #0ff0fc;
+}
+
+.generate {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.input {
+  background: #12102a;
+  border: 1px solid #2c2a4a;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  color: #f0f2ff;
+  font-size: 0.9rem;
+  min-width: 220px;
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #0ff0fc, #7b2ff7);
+  color: #03010a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.error {
+  color: #ff6b81;
+  margin-bottom: 1rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.row {
+  border: 1px solid rgba(15, 240, 252, 0.2);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+
+.rowTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.status {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b8fb3;
+}
+
+.statusValid {
+  color: #0ff0fc;
+}
+
+.url {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  align-items: center;
+}
+
+.urlText {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #a7abc9;
+  word-break: break-all;
+  flex: 1;
+}
+
+.linkButton {
+  background: none;
+  border: 1px solid rgba(15, 240, 252, 0.4);
+  color: #0ff0fc;
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.meta {
+  font-size: 0.78rem;
+  color: #6f7391;
+  margin-top: 0.5rem;
+}
