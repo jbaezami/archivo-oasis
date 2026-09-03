@@ -1,6 +1,13 @@
 .superpowers/
 node_modules/
 dist/
-.env
 *.local
 server/data/
+
+# Secrets / entorno — nunca subir. Solo los *.example se versionan.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
