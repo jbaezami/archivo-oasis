@@ -9,6 +9,7 @@ import {
   SUBMISSION_CATEGORIES,
   type SubmissionCategory,
   type SubmissionRecord,
+  type SubmissionStatus,
 } from '../submissions'
 import { writeSubmissionFile, deleteSubmissionFile } from '../submissionFiles'
 
@@ -19,7 +20,7 @@ export interface SubmissionJson {
   sourceType: 'url' | 'file'
   sourceUrl: string | null
   fileName: string | null
-  status: string
+  status: SubmissionStatus
   rejectionReason: string | null
   createdAt: string
   processedAt: string | null
@@ -85,6 +86,10 @@ export function createAportacionesRouter(db: DB, dataDir: string): Router {
         res.status(400).json({ error: 'La URL debe empezar por http://, https:// o magnet:' })
         return
       }
+      if (url.length > 2048) {
+        res.status(400).json({ error: 'La URL es demasiado larga' })
+        return
+      }
       const submission = createSubmission(db, {
         userId: currentUserId(req.session!.username as string),
         description,
@@ -102,12 +107,11 @@ export function createAportacionesRouter(db: DB, dataDir: string): Router {
         res.status(400).json({ error: 'El fichero debe ser un .torrent' })
         return
       }
-      let bytes: Buffer
-      try {
-        bytes = Buffer.from(String(body.fileBase64 ?? ''), 'base64')
-      } catch {
-        bytes = Buffer.alloc(0)
+      if (fileName.length > 255) {
+        res.status(400).json({ error: 'El nombre del fichero es demasiado largo' })
+        return
       }
+      const bytes = Buffer.from(String(body.fileBase64 ?? ''), 'base64')
       if (bytes.length === 0 || bytes.length > MAX_FILE_BYTES) {
         res.status(400).json({ error: 'El fichero está vacío o supera los 2 MB' })
         return
@@ -119,7 +123,14 @@ export function createAportacionesRouter(db: DB, dataDir: string): Router {
         sourceType: 'file',
         fileName,
       })
-      writeSubmissionFile(dataDir, submission.id, bytes)
+      try {
+        writeSubmissionFile(dataDir, submission.id, bytes)
+      } catch (err) {
+        deleteSubmission(db, submission.id, currentUserId(req.session!.username as string))
+        console.error('No se pudo guardar el fichero de la aportación', { id: submission.id, err })
+        res.status(500).json({ error: 'No se pudo guardar el fichero' })
+        return
+      }
       res.status(201).json({ submission: toSubmissionJson(submission) })
       return
     }

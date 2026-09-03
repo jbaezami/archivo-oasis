@@ -227,6 +227,7 @@ function AdminSection() {
   const [submissions, setSubmissions] = useState<AdminSubmission[] | null>(null)
   const [filter, setFilter] = useState<SubmissionStatus | 'todas'>('todas')
   const [error, setError] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<number | null>(null)
 
   const load = useCallback(() => {
     fetchAdminSubmissions(filter === 'todas' ? undefined : filter)
@@ -248,20 +249,27 @@ function AdminSection() {
 
   const accept = async (id: number) => {
     setError(null)
+    setBusyId(id)
     try {
       update(await acceptSubmission(id))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo aceptar')
+    } finally {
+      setBusyId(null)
     }
   }
 
   const reject = async (id: number) => {
-    const reason = window.prompt('Motivo (opcional):') ?? undefined
+    const reason = window.prompt('Motivo (opcional):')
+    if (reason === null) return
     setError(null)
+    setBusyId(id)
     try {
-      update(await rejectSubmission(id, reason))
+      update(await rejectSubmission(id, reason.trim() || undefined))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo rechazar')
+    } finally {
+      setBusyId(null)
     }
   }
 
@@ -323,10 +331,18 @@ function AdminSection() {
                 <td>
                   {s.status === 'pendiente' && (
                     <>
-                      <button className={styles.rowButton} onClick={() => accept(s.id)}>
+                      <button
+                        className={styles.rowButton}
+                        onClick={() => accept(s.id)}
+                        disabled={busyId === s.id}
+                      >
                         Aceptar
                       </button>
-                      <button className={`${styles.rowButton} ${styles.danger}`} onClick={() => reject(s.id)}>
+                      <button
+                        className={`${styles.rowButton} ${styles.danger}`}
+                        onClick={() => reject(s.id)}
+                        disabled={busyId === s.id}
+                      >
                         Denegar
                       </button>
                     </>

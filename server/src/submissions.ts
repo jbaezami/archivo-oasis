@@ -130,7 +130,7 @@ export function setStatus(
   opts: { processedBy: string; rejectionReason?: string | null },
 ): SubmissionRecord {
   db.prepare(
-    'UPDATE submissions SET status = ?, processed_at = ?, processed_by = ?, rejection_reason = ? WHERE id = ?',
+    "UPDATE submissions SET status = ?, processed_at = ?, processed_by = ?, rejection_reason = ? WHERE id = ? AND status = 'pendiente'",
   ).run(status, new Date().toISOString(), opts.processedBy, opts.rejectionReason ?? null, id)
   return getSubmission(db, id)!
 }

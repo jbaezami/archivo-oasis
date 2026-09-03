@@ -59,10 +59,12 @@ export function createAdminRouter(
       res.status(403).json({ error: 'No puedes eliminar al administrador' })
       return
     }
-    if (!deleteUser(db, username)) {
+    const removedIds = deleteUser(db, username)
+    if (removedIds === null) {
       res.status(404).json({ error: 'Usuario no encontrado' })
       return
     }
+    removedIds.forEach((id) => deleteSubmissionFile(dataDir, id))
     res.status(204).end()
   })
 
@@ -121,7 +123,12 @@ export function createAdminRouter(
       res.status(503).json({ error: 'qBittorrent no está configurado' })
       return
     }
-    const s = getSubmission(db, Number(req.params.id))
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id)) {
+      res.status(404).json({ error: 'Aportación no encontrada' })
+      return
+    }
+    const s = getSubmission(db, id)
     if (!s) {
       res.status(404).json({ error: 'Aportación no encontrada' })
       return
@@ -131,10 +138,20 @@ export function createAdminRouter(
       return
     }
 
+    let file: Uint8Array | undefined
+    if (s.sourceType === 'file') {
+      try {
+        file = readSubmissionFile(dataDir, s.id)
+      } catch {
+        res.status(409).json({ error: 'El fichero de la aportación no está disponible' })
+        return
+      }
+    }
+
     try {
       await qbittorrent.addTorrent({
         url: s.sourceType === 'url' ? s.sourceUrl ?? undefined : undefined,
-        file: s.sourceType === 'file' ? readSubmissionFile(dataDir, s.id) : undefined,
+        file,
         fileName: s.fileName ?? undefined,
         category: s.category,
       })
@@ -150,7 +167,12 @@ export function createAdminRouter(
   })
 
   router.post('/aportaciones/:id/rechazar', (req, res) => {
-    const s = getSubmission(db, Number(req.params.id))
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id)) {
+      res.status(404).json({ error: 'Aportación no encontrada' })
+      return
+    }
+    const s = getSubmission(db, id)
     if (!s) {
       res.status(404).json({ error: 'Aportación no encontrada' })
       return

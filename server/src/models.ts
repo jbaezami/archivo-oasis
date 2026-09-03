@@ -63,16 +63,22 @@ export function createInvitedUser(db: DB, username: string): UserRecord {
   }
 }
 
-// Borra la ficha del usuario en archivo-oasis (y sus permisos). No toca Jellyfin.
-// Devuelve false si el usuario no existía. Idempotente por transacción.
-export function deleteUser(db: DB, username: string): boolean {
+// Borra la ficha del usuario en archivo-oasis (permisos y aportaciones incluidos).
+// No toca Jellyfin. Devuelve null si el usuario no existía; si no, la lista de ids
+// de las aportaciones borradas (posiblemente vacía) para que la ruta borre sus ficheros.
+export function deleteUser(db: DB, username: string): number[] | null {
   const user = findUserByUsername(db, username)
-  if (!user) return false
-  db.transaction(() => {
+  if (!user) return null
+  return db.transaction(() => {
+    const rows = db
+      .prepare('SELECT id FROM submissions WHERE user_id = ?')
+      .all(user.id) as { id: number }[]
+    const removedIds = rows.map((r) => r.id)
+    db.prepare('DELETE FROM submissions WHERE user_id = ?').run(user.id)
     db.prepare('DELETE FROM permissions WHERE user_id = ?').run(user.id)
     db.prepare('DELETE FROM users WHERE id = ?').run(user.id)
+    return removedIds
   })()
-  return true
 }
 
 export function findUserByUsername(db: DB, username: string): UserRecord | undefined {

@@ -351,6 +351,36 @@ test('DELETE /api/admin/users/:username elimina al usuario y sus permisos', asyn
   }
 })
 
+test('DELETE /api/admin/users/:username borra también sus aportaciones y ficheros', async () => {
+  const { server, baseUrl, db, dataDir } = startTestServer()
+  try {
+    seedSubmission(db, 'alice')
+    const fileSub = seedSubmission(db, 'alice', {
+      sourceType: 'file',
+      fileName: 'x.torrent',
+      sourceUrl: null,
+    })
+    writeSubmissionFile(dataDir, fileSub.id, new Uint8Array([1, 2, 3]))
+    assert.equal(fs.existsSync(submissionFilePath(dataDir, fileSub.id)), true)
+
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+
+    const del = await fetch(`${baseUrl}/api/admin/users/alice`, {
+      method: 'DELETE',
+      headers: { Cookie: adminCookie },
+    })
+    assert.equal(del.status, 204)
+
+    const list = await (
+      await fetch(`${baseUrl}/api/admin/aportaciones`, { headers: { Cookie: adminCookie } })
+    ).json()
+    assert.equal(list.submissions.length, 0)
+    assert.equal(fs.existsSync(submissionFilePath(dataDir, fileSub.id)), false)
+  } finally {
+    server.close()
+  }
+})
+
 test('DELETE /api/admin/users/:username devuelve 404 si el usuario no existe', async () => {
   const { server, baseUrl } = startTestServer()
   try {
@@ -420,7 +450,7 @@ test('GET /api/admin/aportaciones lista todas y filtra por estado', async () => 
   }
 })
 
-test('aceptar envia a qBittorrent, marca procesada y borra el fichero', async () => {
+test('aceptar envía a qBittorrent, marca procesada y borra el fichero', async () => {
   const qb = recordingQb()
   const { server, baseUrl, db, dataDir } = startTestServer(qb.client)
   try {
@@ -444,7 +474,7 @@ test('aceptar envia a qBittorrent, marca procesada y borra el fichero', async ()
 test('aceptar cuando qBittorrent falla -> 502 y sigue pendiente', async () => {
   const failing: QbittorrentClient = {
     async addTorrent() {
-      throw new QbittorrentError('qBittorrent rechazo el torrent')
+      throw new QbittorrentError('qBittorrent rechazó el torrent')
     },
   }
   const { server, baseUrl, db } = startTestServer(failing)
@@ -514,7 +544,7 @@ test('rechazar marca rechazada con el motivo', async () => {
   }
 })
 
-test('los endpoints de moderacion rechazan a quien no es admin', async () => {
+test('los endpoints de moderación rechazan a quien no es admin', async () => {
   const { server, baseUrl } = startTestServer()
   try {
     const userCookie = await loginAs(baseUrl, 'alice')
