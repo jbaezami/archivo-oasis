@@ -7,6 +7,7 @@ import { createSessionMiddleware } from './session'
 import { createAuthRouter } from './routes/auth'
 import { createAdminRouter } from './routes/admin'
 import { createInvitesRouter } from './routes/invites'
+import { createAportacionesRouter } from './routes/aportaciones'
 
 export interface AppConfig {
   db: DB
@@ -28,6 +29,7 @@ export function createApp(config: AppConfig): Express {
   app.use('/api', createAuthRouter(config.db, config.jellyfin, config.adminUsername))
   app.use('/api/admin', createAdminRouter(config.db, config.adminUsername))
   app.use('/api/invites', createInvitesRouter(config.db, config.jellyfinAdmin))
+  app.use('/api/aportaciones', createAportacionesRouter(config.db, config.dataDir))
 
   return app
 }
