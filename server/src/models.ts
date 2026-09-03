@@ -4,14 +4,14 @@ export interface UserRecord {
   id: number
   jellyfinUsername: string
   createdAt: string
-  lastLoginAt: string
+  lastLoginAt: string | null
 }
 
 interface UserRow {
   id: number
   jellyfin_username: string
   created_at: string
-  last_login_at: string
+  last_login_at: string | null
 }
 
 function toUserRecord(row: UserRow): UserRecord {
@@ -46,6 +46,23 @@ export function upsertUserLogin(db: DB, username: string): UserRecord {
   })
 }
 
+export function createInvitedUser(db: DB, username: string): UserRecord {
+  const existing = findUserByUsername(db, username)
+  if (existing) return existing
+
+  const now = new Date().toISOString()
+  const result = db
+    .prepare('INSERT INTO users (jellyfin_username, created_at, last_login_at) VALUES (?, ?, NULL)')
+    .run(username, now)
+
+  return {
+    id: Number(result.lastInsertRowid),
+    jellyfinUsername: username,
+    createdAt: now,
+    lastLoginAt: null,
+  }
+}
+
 export function findUserByUsername(db: DB, username: string): UserRecord | undefined {
   const row = db
     .prepare('SELECT id, jellyfin_username, created_at, last_login_at FROM users WHERE jellyfin_username = ? COLLATE NOCASE')
@@ -68,10 +85,12 @@ export function setPermission(db: DB, userId: number, appKey: AppKey, granted: b
   }
 }
 
-export function listUsersWithPermissions(db: DB): { username: string; lastLoginAt: string; permissions: AppKey[] }[] {
+export function listUsersWithPermissions(
+  db: DB,
+): { username: string; lastLoginAt: string | null; permissions: AppKey[] }[] {
   const users = db
     .prepare('SELECT id, jellyfin_username, last_login_at FROM users ORDER BY jellyfin_username COLLATE NOCASE')
-    .all() as { id: number; jellyfin_username: string; last_login_at: string }[]
+    .all() as { id: number; jellyfin_username: string; last_login_at: string | null }[]
 
   return users.map((u) => ({
     username: u.jellyfin_username,

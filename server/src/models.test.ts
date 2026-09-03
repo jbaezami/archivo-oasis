@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createDb } from './db'
-import { upsertUserLogin, findUserByUsername, getPermissions, setPermission, listUsersWithPermissions } from './models'
+import { upsertUserLogin, findUserByUsername, getPermissions, setPermission, listUsersWithPermissions, createInvitedUser } from './models'
 
 test('upsertUserLogin creates a new user on first login and reuses it on the second', () => {
   const db = createDb(':memory:')
@@ -53,4 +53,38 @@ test('listUsersWithPermissions returns every known user with their permissions',
   assert.equal(users.length, 2)
   const aliceEntry = users.find((u) => u.username === 'alice')
   assert.deepEqual(aliceEntry?.permissions, ['cantina'])
+})
+
+test('createInvitedUser crea el usuario con lastLoginAt nulo', () => {
+  const db = createDb(':memory:')
+  const user = createInvitedUser(db, 'marta')
+  assert.equal(user.jellyfinUsername, 'marta')
+  assert.equal(user.lastLoginAt, null)
+  assert.equal(findUserByUsername(db, 'marta')?.lastLoginAt, null)
+})
+
+test('createInvitedUser es idempotente y no pisa un login previo', () => {
+  const db = createDb(':memory:')
+  const first = upsertUserLogin(db, 'marta')
+  assert.notEqual(first.lastLoginAt, null)
+  const second = createInvitedUser(db, 'Marta')
+  assert.equal(second.id, first.id)
+  assert.notEqual(second.lastLoginAt, null)
+})
+
+test('un usuario invitado que luego inicia sesión obtiene lastLoginAt', () => {
+  const db = createDb(':memory:')
+  const invited = createInvitedUser(db, 'marta')
+  assert.equal(invited.lastLoginAt, null)
+  const loggedIn = upsertUserLogin(db, 'marta')
+  assert.equal(loggedIn.id, invited.id)
+  assert.notEqual(loggedIn.lastLoginAt, null)
+})
+
+test('listUsersWithPermissions incluye usuarios invitados con lastLoginAt null', () => {
+  const db = createDb(':memory:')
+  createInvitedUser(db, 'marta')
+  const list = listUsersWithPermissions(db)
+  const marta = list.find((u) => u.username === 'marta')
+  assert.equal(marta?.lastLoginAt, null)
 })
