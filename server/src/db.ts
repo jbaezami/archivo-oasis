@@ -22,7 +22,7 @@ export function createDb(filePath: string): DB {
       id INTEGER PRIMARY KEY,
       jellyfin_username TEXT NOT NULL UNIQUE COLLATE NOCASE,
       created_at TEXT NOT NULL,
-      last_login_at TEXT NOT NULL
+      last_login_at TEXT
     );
 
     CREATE TABLE IF NOT EXISTS permissions (
@@ -30,6 +30,17 @@ export function createDb(filePath: string): DB {
       app_key TEXT NOT NULL CHECK (app_key IN ('jellyfin', 'jellyseerr', 'cantina', 'aportaciones')),
       granted_at TEXT NOT NULL,
       PRIMARY KEY (user_id, app_key)
+    );
+
+    CREATE TABLE IF NOT EXISTS invites (
+      token TEXT PRIMARY KEY,
+      label TEXT,
+      created_by TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      used_by_username TEXT,
+      revoked_at TEXT
     );
   `)
 
