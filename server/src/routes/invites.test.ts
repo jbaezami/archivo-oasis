@@ -31,6 +31,8 @@ function startTestServer(jellyfinAdmin: JellyfinAdminClient | null) {
     db,
     jellyfin: acceptingJellyfin,
     jellyfinAdmin,
+    qbittorrent: null,
+    dataDir: '/tmp/archivo-oasis-test',
     adminUsername: 'admin-user',
     sessionSecret: 'test-secret',
   })

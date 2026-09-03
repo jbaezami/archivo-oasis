@@ -22,6 +22,8 @@ function startTestServer(jellyfin: JellyfinClient) {
     db: createDb(':memory:'),
     jellyfin,
     jellyfinAdmin: null,
+    qbittorrent: null,
+    dataDir: '/tmp/archivo-oasis-test',
     adminUsername: 'admin-user',
     sessionSecret: 'test-secret',
   })
