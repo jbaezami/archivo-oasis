@@ -48,6 +48,7 @@ export interface AdminUser {
   username: string
   lastLoginAt: string | null
   permissions: AppKey[]
+  isAdmin: boolean
 }
 
 export async function fetchAdminUsers(): Promise<AdminUser[]> {
@@ -68,6 +69,16 @@ export async function setUserPermission(username: string, appKey: AppKey, grante
   })
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, 'No se pudo actualizar el permiso'))
+  }
+}
+
+export async function deleteAdminUser(username: string): Promise<void> {
+  const response = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+  })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, 'No se pudo eliminar el usuario'))
   }
 }
 

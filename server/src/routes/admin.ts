@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import type { DB } from '../db'
 import { APP_KEYS, type AppKey } from '../db'
-import { listUsersWithPermissions, findUserByUsername, setPermission } from '../models'
+import { listUsersWithPermissions, findUserByUsername, setPermission, deleteUser } from '../models'
 import { createInvite, listInvites, revokeInvite, type InviteRecord, type InviteStatus } from '../invites'
 import { requireAdmin } from '../middleware'
 
@@ -34,7 +34,24 @@ export function createAdminRouter(db: DB, adminUsername: string): Router {
   router.use(requireAdmin(adminUsername))
 
   router.get('/users', (_req, res) => {
-    res.json({ users: listUsersWithPermissions(db) })
+    const users = listUsersWithPermissions(db).map((u) => ({
+      ...u,
+      isAdmin: u.username.toLowerCase() === adminUsername.toLowerCase(),
+    }))
+    res.json({ users })
+  })
+
+  router.delete('/users/:username', (req, res) => {
+    const { username } = req.params
+    if (username.toLowerCase() === adminUsername.toLowerCase()) {
+      res.status(403).json({ error: 'No puedes eliminar al administrador' })
+      return
+    }
+    if (!deleteUser(db, username)) {
+      res.status(404).json({ error: 'Usuario no encontrado' })
+      return
+    }
+    res.status(204).end()
   })
 
   router.post('/permissions', (req, res) => {

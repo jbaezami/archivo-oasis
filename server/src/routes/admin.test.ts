@@ -259,3 +259,107 @@ test('DELETE /api/admin/invites/:token devuelve 404 si no existe', async () => {
     server.close()
   }
 })
+
+test('GET /api/admin/users marca isAdmin en la fila del administrador', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    await loginAs(baseUrl, 'alice')
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+
+    const response = await fetch(`${baseUrl}/api/admin/users`, { headers: { Cookie: adminCookie } })
+    const { users } = await response.json()
+    const alice = users.find((u: { username: string }) => u.username === 'alice')
+    const admin = users.find((u: { username: string }) => u.username === 'admin-user')
+    assert.equal(alice.isAdmin, false)
+    assert.equal(admin.isAdmin, true)
+  } finally {
+    server.close()
+  }
+})
+
+test('DELETE /api/admin/users/:username elimina al usuario y sus permisos', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    await loginAs(baseUrl, 'alice')
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+
+    await fetch(`${baseUrl}/api/admin/permissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+      body: JSON.stringify({ username: 'alice', appKey: 'cantina', granted: true }),
+    })
+
+    const del = await fetch(`${baseUrl}/api/admin/users/alice`, {
+      method: 'DELETE',
+      headers: { Cookie: adminCookie },
+    })
+    assert.equal(del.status, 204)
+
+    const afterDelete = await fetch(`${baseUrl}/api/admin/users`, { headers: { Cookie: adminCookie } })
+    const { users: usersAfter } = await afterDelete.json()
+    assert.equal(
+      usersAfter.find((u: { username: string }) => u.username === 'alice'),
+      undefined,
+    )
+
+    // vuelve a iniciar sesión: fila nueva, sin los permisos antiguos
+    await loginAs(baseUrl, 'alice')
+    const afterRelogin = await fetch(`${baseUrl}/api/admin/users`, { headers: { Cookie: adminCookie } })
+    const { users: usersRelogin } = await afterRelogin.json()
+    const aliceAgain = usersRelogin.find((u: { username: string }) => u.username === 'alice')
+    assert.deepEqual(aliceAgain.permissions, [])
+  } finally {
+    server.close()
+  }
+})
+
+test('DELETE /api/admin/users/:username devuelve 404 si el usuario no existe', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+    const del = await fetch(`${baseUrl}/api/admin/users/fantasma`, {
+      method: 'DELETE',
+      headers: { Cookie: adminCookie },
+    })
+    assert.equal(del.status, 404)
+  } finally {
+    server.close()
+  }
+})
+
+test('DELETE /api/admin/users/:username rechaza borrar al administrador con 403', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    const adminCookie = await loginAs(baseUrl, 'admin-user')
+    const del = await fetch(`${baseUrl}/api/admin/users/Admin-User`, {
+      method: 'DELETE',
+      headers: { Cookie: adminCookie },
+    })
+    assert.equal(del.status, 403)
+
+    const list = await fetch(`${baseUrl}/api/admin/users`, { headers: { Cookie: adminCookie } })
+    const { users } = await list.json()
+    assert.ok(users.find((u: { username: string }) => u.username === 'admin-user'))
+  } finally {
+    server.close()
+  }
+})
+
+test('DELETE /api/admin/users/:username rechaza a quien no es admin', async () => {
+  const { server, baseUrl } = startTestServer()
+  try {
+    await loginAs(baseUrl, 'target')
+    const userCookie = await loginAs(baseUrl, 'alice')
+
+    const noSession = await fetch(`${baseUrl}/api/admin/users/target`, { method: 'DELETE' })
+    assert.equal(noSession.status, 401)
+
+    const asUser = await fetch(`${baseUrl}/api/admin/users/target`, {
+      method: 'DELETE',
+      headers: { Cookie: userCookie },
+    })
+    assert.equal(asUser.status, 403)
+  } finally {
+    server.close()
+  }
+})

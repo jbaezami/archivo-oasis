@@ -63,6 +63,18 @@ export function createInvitedUser(db: DB, username: string): UserRecord {
   }
 }
 
+// Borra la ficha del usuario en archivo-oasis (y sus permisos). No toca Jellyfin.
+// Devuelve false si el usuario no existía. Idempotente por transacción.
+export function deleteUser(db: DB, username: string): boolean {
+  const user = findUserByUsername(db, username)
+  if (!user) return false
+  db.transaction(() => {
+    db.prepare('DELETE FROM permissions WHERE user_id = ?').run(user.id)
+    db.prepare('DELETE FROM users WHERE id = ?').run(user.id)
+  })()
+  return true
+}
+
 export function findUserByUsername(db: DB, username: string): UserRecord | undefined {
   const row = db
     .prepare('SELECT id, jellyfin_username, created_at, last_login_at FROM users WHERE jellyfin_username = ? COLLATE NOCASE')

@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
-import { APP_KEYS, fetchAdminUsers, setUserPermission, type AdminUser, type AppKey } from '../../lib/authApi'
+import {
+  APP_KEYS,
+  deleteAdminUser,
+  fetchAdminUsers,
+  setUserPermission,
+  type AdminUser,
+  type AppKey,
+} from '../../lib/authApi'
 import styles from './PermisosPage.module.css'
 
 const APP_LABELS: Record<AppKey, string> = {
@@ -41,6 +48,23 @@ function PermisosPage() {
     }
   }
 
+  const remove = async (username: string) => {
+    if (
+      !window.confirm(
+        `¿Eliminar a ${username} de archivo-oasis? Perderá sus permisos. Si vuelve a iniciar sesión se recreará sin permisos.`,
+      )
+    ) {
+      return
+    }
+    setError(null)
+    try {
+      await deleteAdminUser(username)
+      setUsers((prev) => prev?.filter((u) => u.username !== username) ?? null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el usuario')
+    }
+  }
+
   return (
     <section>
       <h1 className={styles.title}>Permisos</h1>
@@ -56,6 +80,7 @@ function PermisosPage() {
               {APP_KEYS.map((key) => (
                 <th key={key}>{APP_LABELS[key]}</th>
               ))}
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -72,6 +97,13 @@ function PermisosPage() {
                     />
                   </td>
                 ))}
+                <td>
+                  {!user.isAdmin && (
+                    <button className={styles.deleteButton} onClick={() => remove(user.username)}>
+                      Eliminar
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
