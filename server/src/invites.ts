@@ -84,6 +84,7 @@ export function inviteStatus(invite: InviteRecord, now: Date = new Date()): Invi
 }
 
 export function listInvites(db: DB): (InviteRecord & { status: InviteStatus })[] {
+  // rowid desc como desempate: created_at puede coincidir al milisegundo entre dos invitaciones creadas seguidas.
   const rows = db
     .prepare(`SELECT ${SELECT_COLS} FROM invites ORDER BY created_at DESC, rowid DESC`)
     .all() as InviteRow[]
@@ -96,7 +97,9 @@ export function listInvites(db: DB): (InviteRecord & { status: InviteStatus })[]
 
 export function markInviteUsed(db: DB, token: string, username: string): boolean {
   const result = db
-    .prepare('UPDATE invites SET used_at = ?, used_by_username = ? WHERE token = ? AND used_at IS NULL')
+    .prepare(
+      'UPDATE invites SET used_at = ?, used_by_username = ? WHERE token = ? AND used_at IS NULL AND revoked_at IS NULL',
+    )
     .run(new Date().toISOString(), username, token)
   return result.changes > 0
 }

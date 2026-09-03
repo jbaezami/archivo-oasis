@@ -13,7 +13,7 @@ type View = 'loading' | 'form' | 'done' | 'gone' | 'used' | 'expired' | 'revoked
 const INVALID_MESSAGE: Record<'used' | 'expired' | 'revoked' | 'gone', string> = {
   used: 'Esta invitación ya se ha usado.',
   expired: 'Esta invitación ha caducado. Pide una nueva.',
-  revoked: 'Esta invitación no es válida.',
+  revoked: 'Esta invitación ya no es válida.',
   gone: 'Esta invitación ya no es válida.',
 }
 
@@ -57,7 +57,13 @@ function Invitacion() {
   }
 
   if (view === 'loading') {
-    return <div className={styles.container} />
+    return (
+      <div className={styles.container}>
+        <div className={styles.card}>
+          <p className={styles.subtitle}>Comprobando invitación…</p>
+        </div>
+      </div>
+    )
   }
 
   if (view === 'error') {
@@ -123,6 +129,7 @@ function Invitacion() {
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            required
             autoFocus
           />
         </div>
@@ -138,6 +145,8 @@ function Invitacion() {
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+            required
           />
         </div>
 

@@ -45,6 +45,15 @@ Abre `http://localhost:8080`.
 3. En Portainer, crea un Stack nuevo usando el contenido de `docker-compose.yml` de este repo, y despliégalo.
 4. Cuando haya una imagen nueva (tras un push a `main`), vuelve a Portainer y pulsa **Pull and redeploy** en el stack para actualizar el contenedor con la última versión. Por ahora este paso es manual — el webhook nativo de Portainer es una función de pago (Business Edition) no disponible en Community Edition, y de momento no usamos ninguna alternativa automática (como [Watchtower](https://containrrr.dev/watchtower/)) para mantener esto simple.
 
+### Variables de entorno del backend
+
+El servicio `archivo-oasis-api` del `docker-compose.yml` lee estas variables de un `.env` situado junto al `docker-compose.yml` en el despliegue:
+
+- `JELLYFIN_URL` — URL base de Jellyfin contra la que se validan los inicios de sesión.
+- `ADMIN_JELLYFIN_USERNAME` — nombre de usuario de Jellyfin que tiene acceso al panel de administración de archivo-oasis.
+- `SESSION_SECRET` — secreto para firmar la cookie de sesión. Genuinamente secreto.
+- `JELLYFIN_API_KEY` — API key de administrador de Jellyfin (Panel → Avanzado → Claves API), usada para crear cuentas al consumir invitaciones. Genuinamente secreto. Si no se define, el backend arranca igual pero las rutas de invitaciones responden `503`.
+
 ## Exponer con cloudflared
 
 El servicio está publicado vía [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) en `archivo-oasis.com`. El contenedor `archivo-oasis` está conectado también a la red Docker `red-cloudflare` (declarada como externa en `docker-compose.yml`), que es la misma red donde corre el contenedor de cloudflared — así puede resolver el host `archivo-oasis` por nombre.

@@ -23,7 +23,10 @@ function InvitacionesPage() {
   useEffect(() => {
     fetchInvites()
       .then(setInvites)
-      .catch(() => setError('No se pudo cargar la lista de invitaciones'))
+      .catch(() => {
+        setError('No se pudo cargar la lista de invitaciones')
+        setInvites([])
+      })
   }, [])
 
   const handleGenerate = async () => {
@@ -53,9 +56,13 @@ function InvitacionesPage() {
   }
 
   const handleCopy = async (token: string) => {
-    await navigator.clipboard.writeText(inviteUrl(token))
-    setCopied(token)
-    setTimeout(() => setCopied((c) => (c === token ? null : c)), 2000)
+    try {
+      await navigator.clipboard.writeText(inviteUrl(token))
+      setCopied(token)
+      setTimeout(() => setCopied((c) => (c === token ? null : c)), 2000)
+    } catch {
+      setError('No se pudo copiar. Copia la URL manualmente.')
+    }
   }
 
   return (
@@ -70,7 +77,11 @@ function InvitacionesPage() {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
         />
-        <button className={styles.button} onClick={handleGenerate} disabled={busy}>
+        <button
+          className={styles.button}
+          onClick={handleGenerate}
+          disabled={busy || invites === null}
+        >
           {busy ? 'Generando…' : 'Generar invitación'}
         </button>
       </div>

@@ -69,6 +69,14 @@ test('markInviteUsed devuelve false si ya estaba usada', () => {
   assert.equal(findInvite(db, invite.token)!.usedByUsername, 'marta')
 })
 
+test('markInviteUsed no marca una invitación revocada', () => {
+  const db = createDb(':memory:')
+  const invite = createInvite(db, { createdBy: 'admin' })
+  assert.equal(revokeInvite(db, invite.token), true)
+  assert.equal(markInviteUsed(db, invite.token, 'marta'), false)
+  assert.equal(findInvite(db, invite.token)!.usedAt, null)
+})
+
 test('inviteStatus: revoked tiene prioridad sobre expired y used', () => {
   const db = createDb(':memory:')
   const invite = createInvite(db, { createdBy: 'admin' })

@@ -7,7 +7,7 @@ export interface JellyfinAdminClient {
 
 interface JellyfinUser {
   Id: string
-  Name: string
+  Name: string | null
 }
 
 export function createJellyfinAdminClient(baseUrl: string, apiKey: string): JellyfinAdminClient {
@@ -19,8 +19,16 @@ export function createJellyfinAdminClient(baseUrl: string, apiKey: string): Jell
   async function call(pathname: string, init: RequestInit): Promise<Response> {
     try {
       return await fetch(`${baseUrl}${pathname}`, { ...init, headers })
+    } catch (err) {
+      throw new JellyfinAdminError(`No se pudo contactar con Jellyfin (${pathname})`, { cause: err })
+    }
+  }
+
+  async function parseJson<T>(response: Response): Promise<T> {
+    try {
+      return (await response.json()) as T
     } catch {
-      throw new JellyfinAdminError(`No se pudo contactar con Jellyfin (${pathname})`)
+      throw new JellyfinAdminError('Respuesta inesperada de Jellyfin')
     }
   }
 
@@ -30,8 +38,8 @@ export function createJellyfinAdminClient(baseUrl: string, apiKey: string): Jell
       if (!listResponse.ok) {
         throw new JellyfinAdminError('Jellyfin no devolvió la lista de usuarios')
       }
-      const existing = (await listResponse.json()) as JellyfinUser[]
-      if (existing.some((u) => u.Name.toLowerCase() === username.toLowerCase())) {
+      const existing = await parseJson<JellyfinUser[]>(listResponse)
+      if (existing.some((u) => u.Name?.toLowerCase() === username.toLowerCase())) {
         throw new JellyfinUserExistsError(`El usuario "${username}" ya existe en Jellyfin`)
       }
 
@@ -42,14 +50,31 @@ export function createJellyfinAdminClient(baseUrl: string, apiKey: string): Jell
       if (!createResponse.ok) {
         throw new JellyfinAdminError('Jellyfin rechazó la creación del usuario')
       }
-      const created = (await createResponse.json()) as JellyfinUser
+      const created = await parseJson<JellyfinUser>(createResponse)
+      if (!created || typeof created.Id !== 'string' || !created.Id) {
+        throw new JellyfinAdminError('Jellyfin no devolvió el id del usuario creado')
+      }
 
-      const passwordResponse = await call(`/Users/${created.Id}/Password`, {
-        method: 'POST',
-        body: JSON.stringify({ CurrentPw: '', NewPw: password }),
-      })
-      if (!passwordResponse.ok) {
-        throw new JellyfinAdminError('Jellyfin rechazó la contraseña del usuario')
+      try {
+        const passwordResponse = await call(`/Users/${created.Id}/Password`, {
+          method: 'POST',
+          body: JSON.stringify({ CurrentPw: '', NewPw: password }),
+        })
+        if (!passwordResponse.ok) {
+          throw new JellyfinAdminError('Jellyfin rechazó la contraseña del usuario')
+        }
+      } catch (err) {
+        try {
+          await call(`/Users/${created.Id}`, { method: 'DELETE' })
+        } catch {
+          // best-effort: ignoramos errores de limpieza
+        }
+        console.error(
+          `No se pudo fijar la contraseña; usuario Jellyfin ${created.Id} eliminado (best-effort)`,
+        )
+        throw err instanceof JellyfinAdminError
+          ? err
+          : new JellyfinAdminError('Jellyfin rechazó la contraseña del usuario')
       }
     },
   }

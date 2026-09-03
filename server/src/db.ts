@@ -44,5 +44,46 @@ export function createDb(filePath: string): DB {
     );
   `)
 
+  migrateUsersLastLoginNullable(db)
+
   return db
+}
+
+/**
+ * Migración idempotente: en despliegues antiguos la columna `users.last_login_at`
+ * se creó como `NOT NULL`. Un usuario pre-creado por invitación aún no ha iniciado
+ * sesión, así que la columna debe admitir NULL. `CREATE TABLE IF NOT EXISTS` no
+ * altera una tabla ya existente y la BD vive en un volumen persistente, por lo que
+ * hace falta reconstruir la tabla. SQLite no permite quitar un `NOT NULL` con
+ * `ALTER TABLE`, así que se recrea preservando filas e ids (las referencias de
+ * `permissions.user_id` siguen siendo válidas porque los ids se conservan).
+ */
+export function migrateUsersLastLoginNullable(db: DB): void {
+  const columns = db.pragma('table_info(users)') as { name: string; notnull: number }[]
+  const lastLogin = columns.find((c) => c.name === 'last_login_at')
+  if (!lastLogin || lastLogin.notnull !== 1) return
+
+  // Las claves foráneas (better-sqlite3 las activa por defecto) impedirían el DROP TABLE;
+  // se desactivan durante la reconstrucción y se restauran después. Los ids se conservan,
+  // así que las filas de `permissions` siguen apuntando al usuario correcto.
+  const fkWasOn = db.pragma('foreign_keys', { simple: true }) === 1
+  if (fkWasOn) db.pragma('foreign_keys = OFF')
+  try {
+    db.transaction(() => {
+      db.exec(`
+        CREATE TABLE users_new (
+          id INTEGER PRIMARY KEY,
+          jellyfin_username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+          created_at TEXT NOT NULL,
+          last_login_at TEXT
+        );
+        INSERT INTO users_new (id, jellyfin_username, created_at, last_login_at)
+          SELECT id, jellyfin_username, created_at, last_login_at FROM users;
+        DROP TABLE users;
+        ALTER TABLE users_new RENAME TO users;
+      `)
+    })()
+  } finally {
+    if (fkWasOn) db.pragma('foreign_keys = ON')
+  }
 }

@@ -5,7 +5,18 @@ import { listUsersWithPermissions, findUserByUsername, setPermission } from '../
 import { createInvite, listInvites, revokeInvite, type InviteRecord, type InviteStatus } from '../invites'
 import { requireAdmin } from '../middleware'
 
-function toInviteSummary(invite: InviteRecord & { status: InviteStatus }) {
+export interface InviteSummary {
+  token: string
+  label: string | null
+  createdBy: string
+  createdAt: string
+  expiresAt: string
+  status: InviteStatus
+  usedAt: string | null
+  usedByUsername: string | null
+}
+
+function toInviteSummary(invite: InviteRecord & { status: InviteStatus }): InviteSummary {
   return {
     token: invite.token,
     label: invite.label,

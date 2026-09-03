@@ -63,15 +63,24 @@ export function createInvitesRouter(db: DB, jellyfinAdmin: JellyfinAdminClient |
         throw err
       }
 
-      db.transaction(() => {
-        const user = createInvitedUser(db, trimmedUsername)
-        setPermission(db, user.id, 'jellyfin', true)
-        setPermission(db, user.id, 'jellyseerr', true)
-        markInviteUsed(db, invite.token, trimmedUsername)
-      })()
+      try {
+        db.transaction(() => {
+          const user = createInvitedUser(db, trimmedUsername)
+          setPermission(db, user.id, 'jellyfin', true)
+          setPermission(db, user.id, 'jellyseerr', true)
+          markInviteUsed(db, invite.token, trimmedUsername)
+        })()
+      } catch (err) {
+        console.error(
+          'CUENTA JELLYFIN HUÉRFANA: se creó el usuario en Jellyfin pero falló la escritura local',
+          { username: trimmedUsername, token: req.params.token },
+        )
+        throw err
+      }
 
       res.json({ ok: true })
-    } catch {
+    } catch (err) {
+      console.error('Fallo al consumir la invitación', { token: req.params.token, err })
       res.status(500).json({ error: 'No se pudo completar el registro' })
     }
   })
