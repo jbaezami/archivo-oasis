@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../lib/useAuth'
 import { APP_KEYS, fetchAdminUsers, setUserPermission, type AdminUser, type AppKey } from '../../lib/authApi'
-import archivoStyles from './Archivo.module.css'
-import styles from './AdminPanel.module.css'
+import styles from './PermisosPage.module.css'
 
 const APP_LABELS: Record<AppKey, string> = {
   jellyfin: 'Jellyfin',
@@ -12,48 +9,15 @@ const APP_LABELS: Record<AppKey, string> = {
   aportaciones: 'Aportaciones',
 }
 
-function AdminPanel() {
-  const { status, session } = useAuth()
-  const navigate = useNavigate()
+function PermisosPage() {
   const [users, setUsers] = useState<AdminUser[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (status !== 'authenticated' || !session?.isAdmin) return
     fetchAdminUsers()
       .then(setUsers)
       .catch(() => setError('No se pudo cargar la lista de usuarios'))
-  }, [status, session])
-
-  if (status === 'loading') {
-    return <main className={archivoStyles.container} />
-  }
-
-  if (status === 'offline') {
-    return (
-      <main className={archivoStyles.container}>
-        <div>
-          <h1>No se pudo conectar con el servidor</h1>
-          <button className={archivoStyles.button} onClick={() => navigate('/')}>
-            Volver
-          </button>
-        </div>
-      </main>
-    )
-  }
-
-  if (!session || !session.isAdmin) {
-    return (
-      <main className={archivoStyles.container}>
-        <div>
-          <h1>Solo el penitente pasará</h1>
-          <button className={archivoStyles.button} onClick={() => navigate('/')}>
-            Volver
-          </button>
-        </div>
-      </main>
-    )
-  }
+  }, [])
 
   const toggle = async (username: string, appKey: AppKey, granted: boolean) => {
     setError(null)
@@ -65,7 +29,9 @@ function AdminPanel() {
             u.username === username
               ? {
                   ...u,
-                  permissions: granted ? [...u.permissions, appKey] : u.permissions.filter((p) => p !== appKey),
+                  permissions: granted
+                    ? [...u.permissions, appKey]
+                    : u.permissions.filter((p) => p !== appKey),
                 }
               : u,
           ) ?? null,
@@ -76,8 +42,8 @@ function AdminPanel() {
   }
 
   return (
-    <main className={styles.container}>
-      <h1 className={styles.title}>Configuración — permisos</h1>
+    <section>
+      <h1 className={styles.title}>Permisos</h1>
       {error && <p className={styles.error}>{error}</p>}
       {!users ? (
         <p className={styles.loading}>Cargando…</p>
@@ -86,6 +52,7 @@ function AdminPanel() {
           <thead>
             <tr>
               <th>Usuario</th>
+              <th>Último acceso</th>
               {APP_KEYS.map((key) => (
                 <th key={key}>{APP_LABELS[key]}</th>
               ))}
@@ -95,6 +62,7 @@ function AdminPanel() {
             {users.map((user) => (
               <tr key={user.username}>
                 <td>{user.username}</td>
+                <td>{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString('es-ES') : '—'}</td>
                 {APP_KEYS.map((key) => (
                   <td key={key}>
                     <input
@@ -109,8 +77,8 @@ function AdminPanel() {
           </tbody>
         </table>
       )}
-    </main>
+    </section>
   )
 }
 
-export default AdminPanel
+export default PermisosPage
