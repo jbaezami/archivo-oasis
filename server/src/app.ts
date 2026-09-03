@@ -1,6 +1,7 @@
 import express, { type Express } from 'express'
 import type { DB } from './db'
 import type { JellyfinClient } from './jellyfin'
+import type { JellyfinAdminClient } from './jellyfinAdmin'
 import { createSessionMiddleware } from './session'
 import { createAuthRouter } from './routes/auth'
 import { createAdminRouter } from './routes/admin'
@@ -8,6 +9,7 @@ import { createAdminRouter } from './routes/admin'
 export interface AppConfig {
   db: DB
   jellyfin: JellyfinClient
+  jellyfinAdmin: JellyfinAdminClient | null
   adminUsername: string
   sessionSecret: string
 }
