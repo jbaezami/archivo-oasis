@@ -4,6 +4,11 @@ import { APP_KEYS, type AppKey } from '../db'
 import { listUsersWithPermissions, findUserByUsername, setPermission, deleteUser } from '../models'
 import { createInvite, listInvites, revokeInvite, type InviteRecord, type InviteStatus } from '../invites'
 import { requireAdmin } from '../middleware'
+import type { QbittorrentClient } from '../qbittorrent'
+import { QbittorrentError } from '../qbittorrent'
+import { listAll, getSubmission, setStatus, type SubmissionStatus } from '../submissions'
+import { readSubmissionFile, deleteSubmissionFile } from '../submissionFiles'
+import { toSubmissionJson } from './aportaciones'
 
 export interface InviteSummary {
   token: string
@@ -29,7 +34,14 @@ function toInviteSummary(invite: InviteRecord & { status: InviteStatus }): Invit
   }
 }
 
-export function createAdminRouter(db: DB, adminUsername: string): Router {
+const SUB_STATUSES: SubmissionStatus[] = ['pendiente', 'procesada', 'rechazada']
+
+export function createAdminRouter(
+  db: DB,
+  adminUsername: string,
+  qbittorrent: QbittorrentClient | null,
+  dataDir: string,
+): Router {
   const router = Router()
   router.use(requireAdmin(adminUsername))
 
@@ -95,6 +107,66 @@ export function createAdminRouter(db: DB, adminUsername: string): Router {
       return
     }
     res.status(204).end()
+  })
+
+  router.get('/aportaciones', (req, res) => {
+    const status = req.query.status
+    const filter = SUB_STATUSES.includes(status as SubmissionStatus) ? (status as SubmissionStatus) : undefined
+    const submissions = listAll(db, filter).map((s) => ({ ...toSubmissionJson(s), username: s.username }))
+    res.json({ submissions })
+  })
+
+  router.post('/aportaciones/:id/aceptar', async (req, res) => {
+    if (!qbittorrent) {
+      res.status(503).json({ error: 'qBittorrent no está configurado' })
+      return
+    }
+    const s = getSubmission(db, Number(req.params.id))
+    if (!s) {
+      res.status(404).json({ error: 'Aportación no encontrada' })
+      return
+    }
+    if (s.status !== 'pendiente') {
+      res.status(409).json({ error: 'Esa aportación ya no está pendiente' })
+      return
+    }
+
+    try {
+      await qbittorrent.addTorrent({
+        url: s.sourceType === 'url' ? s.sourceUrl ?? undefined : undefined,
+        file: s.sourceType === 'file' ? readSubmissionFile(dataDir, s.id) : undefined,
+        fileName: s.fileName ?? undefined,
+        category: s.category,
+      })
+    } catch (err) {
+      const message = err instanceof QbittorrentError ? err.message : 'No se pudo enviar a qBittorrent'
+      res.status(502).json({ error: message })
+      return
+    }
+
+    const updated = setStatus(db, s.id, 'procesada', { processedBy: req.session!.username as string })
+    deleteSubmissionFile(dataDir, s.id)
+    res.json({ submission: toSubmissionJson(updated) })
+  })
+
+  router.post('/aportaciones/:id/rechazar', (req, res) => {
+    const s = getSubmission(db, Number(req.params.id))
+    if (!s) {
+      res.status(404).json({ error: 'Aportación no encontrada' })
+      return
+    }
+    if (s.status !== 'pendiente') {
+      res.status(409).json({ error: 'Esa aportación ya no está pendiente' })
+      return
+    }
+    const reason =
+      typeof req.body?.reason === 'string' && req.body.reason.trim() ? req.body.reason.trim() : null
+    const updated = setStatus(db, s.id, 'rechazada', {
+      processedBy: req.session!.username as string,
+      rejectionReason: reason,
+    })
+    deleteSubmissionFile(dataDir, s.id)
+    res.json({ submission: toSubmissionJson(updated) })
   })
 
   return router

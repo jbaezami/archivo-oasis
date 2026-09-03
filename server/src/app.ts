@@ -27,7 +27,10 @@ export function createApp(config: AppConfig): Express {
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }))
   app.use('/api', createAuthRouter(config.db, config.jellyfin, config.adminUsername))
-  app.use('/api/admin', createAdminRouter(config.db, config.adminUsername))
+  app.use(
+    '/api/admin',
+    createAdminRouter(config.db, config.adminUsername, config.qbittorrent, config.dataDir),
+  )
   app.use('/api/invites', createInvitesRouter(config.db, config.jellyfinAdmin))
   app.use('/api/aportaciones', createAportacionesRouter(config.db, config.dataDir))
 
