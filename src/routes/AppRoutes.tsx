@@ -4,6 +4,7 @@ import Archivo from '../pages/Archivo/Archivo'
 import Placeholder from '../pages/Archivo/Placeholder'
 import AdminLayout from '../pages/Archivo/AdminLayout'
 import PermisosPage from '../pages/Archivo/PermisosPage'
+import InvitacionesPage from '../pages/Archivo/InvitacionesPage'
 
 function AppRoutes() {
   return (
@@ -15,6 +16,7 @@ function AppRoutes() {
       <Route path="/archivo/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="permisos" replace />} />
         <Route path="permisos" element={<PermisosPage />} />
+        <Route path="invitaciones" element={<InvitacionesPage />} />
       </Route>
     </Routes>
   )

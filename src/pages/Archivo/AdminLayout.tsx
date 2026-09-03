@@ -5,7 +5,10 @@ import styles from './AdminLayout.module.css'
 const NAV_GROUPS = [
   {
     label: 'Usuarios',
-    items: [{ label: 'Permisos', to: 'permisos' }],
+    items: [
+      { label: 'Permisos', to: 'permisos' },
+      { label: 'Invitaciones', to: 'invitaciones' },
+    ],
   },
 ]
 
