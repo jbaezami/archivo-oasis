@@ -5,11 +5,13 @@ import Placeholder from '../pages/Archivo/Placeholder'
 import AdminLayout from '../pages/Archivo/AdminLayout'
 import PermisosPage from '../pages/Archivo/PermisosPage'
 import InvitacionesPage from '../pages/Archivo/InvitacionesPage'
+import Invitacion from '../pages/Invitacion/Invitacion'
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/invitacion/:token" element={<Invitacion />} />
       <Route path="/archivo" element={<Archivo />} />
       <Route path="/archivo/cantina" element={<Placeholder title="La Cantina" need="cantina" />} />
       <Route path="/archivo/aportaciones" element={<Placeholder title="Aportaciones" need="aportaciones" />} />
