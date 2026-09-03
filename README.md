@@ -53,6 +53,8 @@ El servicio `archivo-oasis-api` del `docker-compose.yml` lee estas variables de 
 - `ADMIN_JELLYFIN_USERNAME` — nombre de usuario de Jellyfin que tiene acceso al panel de administración de archivo-oasis.
 - `SESSION_SECRET` — secreto para firmar la cookie de sesión. Genuinamente secreto.
 - `JELLYFIN_API_KEY` — API key de administrador de Jellyfin (Panel → Avanzado → Claves API), usada para crear cuentas al consumir invitaciones. Genuinamente secreto. Si no se define, el backend arranca igual pero las rutas de invitaciones responden `503`.
+- `QBITTORRENT_URL` — URL base de la WebUI de qBittorrent (sin barra final), usada por la sección Aportaciones para enviar los torrents aceptados.
+- `QBITTORRENT_USER` / `QBITTORRENT_PASSWORD` — credenciales de la WebUI de qBittorrent (no usa API keys). Si alguna de las tres variables de qBittorrent falta, el backend arranca igual pero aceptar una aportación responde `503`.
 
 ## Exponer con cloudflared
 
