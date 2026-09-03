@@ -44,7 +44,7 @@ export function createQbittorrentClient(
     } else if (input.file) {
       form.set(
         'torrents',
-        new Blob([input.file], { type: 'application/x-bittorrent' }),
+        new Blob([input.file as BlobPart], { type: 'application/x-bittorrent' }),
         input.fileName ?? 'aportacion.torrent',
       )
     }
