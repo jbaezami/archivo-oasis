@@ -4,6 +4,7 @@ import { createApp } from './app'
 import { createDb } from './db'
 import { createJellyfinClient } from './jellyfin'
 import { createJellyfinAdminClient } from './jellyfinAdmin'
+import { createQbittorrentClient } from './qbittorrent'
 
 // Carga server/.env si existe. Solo para desarrollo local: en Docker el fichero
 // no se copia a la imagen y las variables llegan por el entorno del contenedor.
@@ -29,6 +30,9 @@ const JELLYFIN_URL = process.env.JELLYFIN_URL
 const ADMIN_JELLYFIN_USERNAME = process.env.ADMIN_JELLYFIN_USERNAME
 const SESSION_SECRET = process.env.SESSION_SECRET
 const JELLYFIN_API_KEY = process.env.JELLYFIN_API_KEY
+const QBITTORRENT_URL = process.env.QBITTORRENT_URL
+const QBITTORRENT_USER = process.env.QBITTORRENT_USER
+const QBITTORRENT_PASSWORD = process.env.QBITTORRENT_PASSWORD
 
 if (!JELLYFIN_URL) throw new Error('Falta la variable de entorno JELLYFIN_URL')
 if (!ADMIN_JELLYFIN_USERNAME) throw new Error('Falta la variable de entorno ADMIN_JELLYFIN_USERNAME')
@@ -46,10 +50,21 @@ if (!jellyfinAdmin) {
   )
 }
 
+const qbittorrent =
+  QBITTORRENT_URL && QBITTORRENT_USER && QBITTORRENT_PASSWORD
+    ? createQbittorrentClient(QBITTORRENT_URL, QBITTORRENT_USER, QBITTORRENT_PASSWORD)
+    : null
+
+if (!qbittorrent) {
+  console.warn('qBittorrent no configurado — aceptar aportaciones devolverá 503')
+}
+
 const app = createApp({
   db,
   jellyfin,
   jellyfinAdmin,
+  qbittorrent,
+  dataDir: DATA_DIR,
   adminUsername: ADMIN_JELLYFIN_USERNAME,
   sessionSecret: SESSION_SECRET,
 })
