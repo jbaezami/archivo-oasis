@@ -10,7 +10,7 @@ import {
   JellyfinAdminError,
   JellyfinUserExistsError,
 } from '../jellyfinAdmin'
-import { createInvite, findInvite, markInviteUsed, revokeInvite, INVITE_TTL_MS } from '../invites'
+import { createInvite, findInvite, markInviteUsed, revokeInvite } from '../invites'
 import { getPermissions, findUserByUsername } from '../models'
 
 const acceptingJellyfin: JellyfinClient = { async authenticate() {} }
@@ -97,6 +97,46 @@ test('POST /api/invites/:token con token ya usado devuelve 410 y no llama a Jell
     })
     assert.equal(response.status, 410)
     assert.equal(admin.calls.length, 0)
+  } finally {
+    server.close()
+  }
+})
+
+test('POST /api/invites/:token con token revocado devuelve 410 y no llama a Jellyfin', async () => {
+  const admin = recordingAdmin()
+  const { server, baseUrl, db } = startTestServer(admin.client)
+  try {
+    const invite = createInvite(db, { createdBy: 'admin-user' })
+    revokeInvite(db, invite.token)
+    const response = await fetch(`${baseUrl}/api/invites/${invite.token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'marta', password: 'secret123' }),
+    })
+    assert.equal(response.status, 410)
+    assert.equal(admin.calls.length, 0)
+    assert.equal(findInvite(db, invite.token)!.usedAt, null)
+  } finally {
+    server.close()
+  }
+})
+
+test('POST /api/invites/:token: error inesperado devuelve 500, token intacto', async () => {
+  const client: JellyfinAdminClient = {
+    async createUser() {
+      throw new Error('boom')
+    },
+  }
+  const { server, baseUrl, db } = startTestServer(client)
+  try {
+    const invite = createInvite(db, { createdBy: 'admin-user' })
+    const response = await fetch(`${baseUrl}/api/invites/${invite.token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'marta', password: 'secret123' }),
+    })
+    assert.equal(response.status, 500)
+    assert.equal(findInvite(db, invite.token)!.usedAt, null)
   } finally {
     server.close()
   }
