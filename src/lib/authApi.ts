@@ -156,3 +156,95 @@ export async function consumeInvite(token: string, username: string, password: s
   }
   throw new Error(message)
 }
+
+export type SubmissionCategory = 'movies' | 'tv' | 'music'
+export type SubmissionStatus = 'pendiente' | 'procesada' | 'rechazada'
+
+export interface Submission {
+  id: number
+  description: string
+  category: SubmissionCategory
+  sourceType: 'url' | 'file'
+  sourceUrl: string | null
+  fileName: string | null
+  status: SubmissionStatus
+  rejectionReason: string | null
+  createdAt: string
+  processedAt: string | null
+  processedBy: string | null
+}
+
+export interface AdminSubmission extends Submission {
+  username: string
+}
+
+export async function createSubmission(input: {
+  description: string
+  category: SubmissionCategory
+  sourceType: 'url' | 'file'
+  sourceUrl?: string
+  fileName?: string
+  fileBase64?: string
+}): Promise<Submission> {
+  const response = await fetch('/api/aportaciones', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, 'No se pudo enviar la aportación'))
+  }
+  return ((await response.json()) as { submission: Submission }).submission
+}
+
+export async function fetchMySubmissions(): Promise<Submission[]> {
+  const response = await fetch('/api/aportaciones', { credentials: 'same-origin' })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, 'No se pudieron cargar tus aportaciones'))
+  }
+  return ((await response.json()) as { submissions: Submission[] }).submissions
+}
+
+export async function deleteSubmission(id: number): Promise<void> {
+  const response = await fetch(`/api/aportaciones/${id}`, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+  })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, 'No se pudo cancelar la aportación'))
+  }
+}
+
+export async function fetchAdminSubmissions(status?: SubmissionStatus): Promise<AdminSubmission[]> {
+  const query = status ? `?status=${status}` : ''
+  const response = await fetch(`/api/admin/aportaciones${query}`, { credentials: 'same-origin' })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, 'No se pudieron cargar las aportaciones'))
+  }
+  return ((await response.json()) as { submissions: AdminSubmission[] }).submissions
+}
+
+export async function acceptSubmission(id: number): Promise<Submission> {
+  const response = await fetch(`/api/admin/aportaciones/${id}/aceptar`, {
+    method: 'POST',
+    credentials: 'same-origin',
+  })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, 'No se pudo aceptar la aportación'))
+  }
+  return ((await response.json()) as { submission: Submission }).submission
+}
+
+export async function rejectSubmission(id: number, reason?: string): Promise<Submission> {
+  const response = await fetch(`/api/admin/aportaciones/${id}/rechazar`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, 'No se pudo rechazar la aportación'))
+  }
+  return ((await response.json()) as { submission: Submission }).submission
+}
