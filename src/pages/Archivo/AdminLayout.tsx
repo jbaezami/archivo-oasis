@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/useAuth'
+import HomeButton from './HomeButton'
 import styles from './AdminLayout.module.css'
 
 const NAV_GROUPS = [
@@ -23,6 +24,7 @@ function AdminLayout() {
   if (status === 'offline') {
     return (
       <div className={styles.centered}>
+        <HomeButton />
         <div>
           <h1>No se pudo conectar con el servidor</h1>
           <button className={styles.button} onClick={() => navigate('/')}>
@@ -36,6 +38,7 @@ function AdminLayout() {
   if (!session || !session.isAdmin) {
     return (
       <div className={styles.centered}>
+        <HomeButton />
         <div>
           <h1>Solo el penitente pasará</h1>
           <button className={styles.button} onClick={() => navigate('/')}>
@@ -48,6 +51,7 @@ function AdminLayout() {
 
   return (
     <div className={styles.container}>
+      <HomeButton />
       <nav className={styles.sidebar}>
         {NAV_GROUPS.map((group) => (
           <div key={group.label}>

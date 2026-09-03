@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/useAuth'
 import type { AppKey } from '../../lib/authApi'
+import HomeButton from './HomeButton'
 import styles from './Archivo.module.css'
 
 interface PlaceholderProps {
@@ -19,6 +20,7 @@ function Placeholder({ title, need }: PlaceholderProps) {
   if (status === 'offline') {
     return (
       <main className={styles.container}>
+        <HomeButton />
         <div>
           <h1>No se pudo conectar con el servidor</h1>
           <button className={styles.button} onClick={() => navigate('/')}>
@@ -32,6 +34,7 @@ function Placeholder({ title, need }: PlaceholderProps) {
   if (!session || !session.permissions.includes(need)) {
     return (
       <main className={styles.container}>
+        <HomeButton />
         <div>
           <h1>Solo el penitente pasará</h1>
           <button className={styles.button} onClick={() => navigate('/')}>
@@ -44,6 +47,7 @@ function Placeholder({ title, need }: PlaceholderProps) {
 
   return (
     <main className={styles.container}>
+      <HomeButton />
       <h1>{title} — próximamente</h1>
     </main>
   )
