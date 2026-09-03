@@ -42,6 +42,22 @@ export function createDb(filePath: string): DB {
       used_by_username TEXT,
       revoked_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS submissions (
+      id INTEGER PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      description TEXT NOT NULL,
+      category TEXT NOT NULL CHECK (category IN ('movies','tv','music')),
+      source_type TEXT NOT NULL CHECK (source_type IN ('url','file')),
+      source_url TEXT,
+      file_name TEXT,
+      status TEXT NOT NULL DEFAULT 'pendiente'
+        CHECK (status IN ('pendiente','procesada','rechazada')),
+      rejection_reason TEXT,
+      created_at TEXT NOT NULL,
+      processed_at TEXT,
+      processed_by TEXT
+    );
   `)
 
   migrateUsersLastLoginNullable(db)
